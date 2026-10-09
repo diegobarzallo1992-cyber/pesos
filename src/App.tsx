@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { Toast } from "./components/ui";
 import { VistaRegistro } from "./views/Registro";
 import { VistaPanel } from "./views/Panel";
+import { VistaUsuarios } from "./views/Usuarios";
 import type { Session } from "@supabase/supabase-js";
 import { Login } from "./components/Login";
 import { supabase } from "./supabase";
@@ -10,7 +11,7 @@ import { descargar, encolar, leerUmbral, pendientes, vaciarCola } from "./sync";
 import { cargarDatos, guardarDatos, ordenar, type Registro } from "./lib";
 import { iniciarNativo, toque } from "./native";
 
-const TABS = [["registro", "Registrar", "M12 5v14M5 12h14"], ["panel", "Panel", "M4 20V10M10 20V4M16 20v-7M22 20H2"]] as const;
+const TABS = [["registro", "Registrar", "M12 5v14M5 12h14"], ["panel", "Panel", "M4 20V10M10 20V4M16 20v-7M22 20H2"], ["usuarios", "Usuarios", "M16 11a4 4 0 1 0-8 0 4 4 0 0 0 8 0zM4 21c0-4 3.6-6 8-6s8 2 8 6"]] as const;
 type Vista = (typeof TABS)[number][0];
 
 export default function App() {
@@ -122,6 +123,7 @@ export default function App() {
           <motion.div key={vista} initial={{ opacity: 0, y: 16, filter: "blur(4px)" }} animate={{ opacity: 1, y: 0, filter: "blur(0px)" }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.22 }}>
             {vista === "registro" && <VistaRegistro registros={registros} umbral={umbral} onGuardar={guardar} onBorrar={borrar} puedeBorrar={esAdmin} aviso={aviso} />}
             {vista === "panel" && <VistaPanel registros={registros} umbral={umbral} />}
+            {vista === "usuarios" && esAdmin && <VistaUsuarios yoId={sesion.user.id} aviso={aviso} />}
           </motion.div>
         </AnimatePresence>
       </main>
@@ -129,7 +131,7 @@ export default function App() {
       <Toast msg={msg} />
 
       <nav className="glass fixed inset-x-4 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-50 mx-auto flex max-w-md rounded-[1.75rem] p-1.5 shadow-2xl ring-1 ring-line">
-        {TABS.map(([id, nombre, icono]) => {
+        {TABS.filter(([id]) => id !== "usuarios" || esAdmin).map(([id, nombre, icono]) => {
           const activo = vista === id;
           return (
             <motion.button key={id} whileTap={{ scale: 0.9 }} onClick={() => { toque(); ir(id); }} role="tab" aria-selected={activo}

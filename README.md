@@ -42,3 +42,7 @@ O `npm run android:open` para abrir Android Studio.
 
 ### Usuarios
 La app pide **usuario y contrasena**. Crea cada usuario en Supabase (*Authentication > Users > Add user*) con el correo `usuario@galapesca.local` (ej. `xbarzallo@galapesca.local`), una contrasena y **Auto Confirm User** marcado. Tambien se puede entrar con un correo real escribiendolo completo.
+
+### Gestion de usuarios desde la app (solo admin)
+1. Supabase > **Edge Functions** > **Deploy a new function** > **Via Editor**. Nombre: `admin-usuarios`. Pega el contenido de `supabase/functions/admin-usuarios/index.ts` y pulsa **Deploy**. (Supabase le da la clave de servicio automaticamente; no se pega ninguna clave.)
+2. Entra a la app como admin: aparece la pestana **Usuarios** para crear usuarios, dar/quitar permisos de admin, cambiar contrasenas y eliminar.
