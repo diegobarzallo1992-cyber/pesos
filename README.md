@@ -39,3 +39,6 @@ O `npm run android:open` para abrir Android Studio.
 - Da rol admin a quien edita/borra: ver la ultima linea comentada de `schema.sql`.
 - La app guarda primero en el celular y sube a Supabase cuando hay internet (indicador en la cabecera). El panel se actualiza en tiempo real.
 - Permisos: todos registran muestras; solo el admin borra (deslizando una muestra reciente). La pestana Datos se retiro; la conexion con Excel se hara mas adelante.
+
+### Usuarios
+La app pide **usuario y contrasena**. Crea cada usuario en Supabase (*Authentication > Users > Add user*) con el correo `usuario@galapesca.local` (ej. `xbarzallo@galapesca.local`), una contrasena y **Auto Confirm User** marcado. Tambien se puede entrar con un correo real escribiendolo completo.

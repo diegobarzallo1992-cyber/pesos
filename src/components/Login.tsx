@@ -4,12 +4,12 @@ import { Boton, Campo } from "./ui";
 import { supabase } from "../supabase";
 
 export function Login() {
-  const [correo, setCorreo] = useState(""); const [clave, setClave] = useState("");
+  const [usuario, setUsuario] = useState(""); const [clave, setClave] = useState("");
   const [error, setError] = useState(""); const [cargando, setCargando] = useState(false);
   const entrar = async (e: React.FormEvent) => {
     e.preventDefault(); setCargando(true); setError("");
-    const { error } = await supabase.auth.signInWithPassword({ email: correo.trim(), password: clave });
-    if (error) setError(error.message.includes("Invalid login") ? "Correo o contrasena incorrectos." : "No se pudo iniciar sesion. Revisa tu conexion.");
+    const { error } = await supabase.auth.signInWithPassword({ email: usuario.includes("@") ? usuario.trim() : `${usuario.trim().toLowerCase()}@galapesca.local`, password: clave });
+    if (error) setError(error.message.includes("Invalid login") ? "Usuario o contrasena incorrectos." : "No se pudo iniciar sesion. Revisa tu conexion.");
     setCargando(false);
   };
   return (
@@ -18,7 +18,7 @@ export function Login() {
         className="w-full max-w-sm space-y-4 rounded-[2rem] bg-card p-6 shadow-2xl">
         <img src="logo.png" alt="Galapesca" className="mx-auto h-16" />
         <div className="text-center"><h1 className="text-xl font-extrabold">Control de pesos</h1><p className="text-sm text-mut">Inicia sesion para continuar</p></div>
-        <Campo etiqueta="Correo" type="email" autoComplete="username" required value={correo} onChange={(e) => setCorreo(e.target.value)} />
+        <Campo etiqueta="Usuario" type="text" autoCapitalize="none" autoCorrect="off" autoComplete="username" required placeholder="ej. xbarzallo" value={usuario} onChange={(e) => setUsuario(e.target.value)} />
         <Campo etiqueta="Contrasena" type="password" autoComplete="current-password" required value={clave} onChange={(e) => setClave(e.target.value)} />
         {error && <motion.p initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: [0, -8, 8, -4, 0] }} className="text-sm font-medium text-bad">{error}</motion.p>}
         <Boton variante="pri" type="submit" disabled={cargando} className="w-full py-3.5 text-base">{cargando ? "Entrando..." : "Entrar"}</Boton>
