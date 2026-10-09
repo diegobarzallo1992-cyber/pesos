@@ -4,7 +4,7 @@ import { Boton, Campo, Et, Modal, Seg, Tarjeta } from "../components/ui";
 import { supabase } from "../supabase";
 import { resultado } from "../native";
 
-interface Usuario { id: string; usuario: string; rol: "admin" | "usuario"; creado: string; ultimo: string | null }
+interface Usuario { id: string; usuario: string; nombre: string; estado: "activo" | "pendiente"; rol: "admin" | "usuario"; creado: string; ultimo: string | null }
 
 async function llamar(cuerpo: Record<string, string>) {
   const { data, error } = await supabase.functions.invoke("admin-usuarios", { body: cuerpo });
@@ -42,6 +42,22 @@ export function VistaUsuarios({ yoId, aviso }: { yoId: string; aviso: (m: string
 
   return (
     <div className="space-y-4">
+      {lista?.some((u) => u.estado === "pendiente") && (
+        <Tarjeta titulo="Solicitudes pendientes" nota="Esperan tu aprobacion">
+          <ul className="space-y-2">
+            {lista.filter((u) => u.estado === "pendiente").map((u) => (
+              <motion.li key={u.id} layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="rounded-2xl bg-warn/10 p-3 ring-1 ring-warn/40">
+                <p className="font-bold">{u.nombre || u.usuario} <span className="font-normal text-mut">({u.usuario})</span></p>
+                <div className="mt-2 flex gap-2">
+                  <Boton variante="pri" disabled={ocupado} onClick={() => ejecutar({ accion: "aprobar", id: u.id }, `${u.usuario} aprobado.`)}>Aprobar</Boton>
+                  <Boton variante="peligro" disabled={ocupado} onClick={() => ejecutar({ accion: "eliminar", id: u.id }, "Solicitud rechazada.")}>Rechazar</Boton>
+                </div>
+              </motion.li>
+            ))}
+          </ul>
+        </Tarjeta>
+      )}
+
       <Tarjeta titulo="Crear usuario" nota="Entra con usuario y contrasena">
         <div className="grid gap-3 sm:grid-cols-2">
           <Campo etiqueta="Usuario" autoCapitalize="none" autoCorrect="off" placeholder="ej. sheyla" value={nuevo.usuario} onChange={(e) => setNuevo({ ...nuevo, usuario: e.target.value })} />
@@ -58,7 +74,7 @@ export function VistaUsuarios({ yoId, aviso }: { yoId: string; aviso: (m: string
         {lista === null && <p className="py-6 text-center text-mut">Cargando...</p>}
         <ul className="space-y-2">
           <AnimatePresence initial={false}>
-            {lista?.map((u) => (
+            {lista?.filter((u) => u.estado === "activo").map((u) => (
               <motion.li key={u.id} layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: -60 }} className="rounded-2xl bg-bg p-3 ring-1 ring-line">
                 <div className="flex items-center gap-2">
                   <span className="min-w-0 flex-1 truncate font-bold">{u.usuario}{u.id === yoId && <span className="font-normal text-mut"> (tu)</span>}</span>
