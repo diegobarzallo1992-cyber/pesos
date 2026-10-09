@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #EEF2F1; --card: #FFFFFF; --fg: #12191C; --mut: #5A6870; --line: #D9E0DE;
+  --deep: #0F4A57; --deep2: #1A7A8C; --ok: #1E9E5F; --warn: #D9890B; --bad: #D93A2E;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #0B1417; --card: #142126; --fg: #E8F0F1; --mut: #8FA3A9; --line: #243439;
+          --deep: #2AA0B5; --deep2: #46C3D8; }
+}
+@theme inline {
+  --color-bg: var(--bg); --color-card: var(--card); --color-fg: var(--fg); --color-mut: var(--mut);
+  --color-line: var(--line); --color-deep: var(--deep); --color-deep2: var(--deep2);
+  --color-ok: var(--ok); --color-warn: var(--warn); --color-bad: var(--bad);
+  --font-sans: "Inter", "Roboto", system-ui, sans-serif;
+}
+* { -webkit-tap-highlight-color: transparent; }
+html { overscroll-behavior-y: contain; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font-sans); }
+button { touch-action: manipulation; }
+input, select { font-size: 16px; }
+.tabular { font-variant-numeric: tabular-nums; }
+.glass { background: color-mix(in srgb, var(--card) 94%, transparent); backdrop-filter: blur(18px) saturate(1.4); }
+@media print { nav, .no-print { display: none !important; } }

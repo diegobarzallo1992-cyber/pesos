@@ -1,7 +1,7 @@
 {
   "appId": "com.galapesca.controlpesos",
   "appName": "Control de pesos",
-  "webDir": "www",
-  "backgroundColor": "#EFF1EE",
+  "webDir": "dist",
+  "backgroundColor": "#0B2A31",
   "android": { "allowMixedContent": false }
 }

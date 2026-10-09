@@ -1,25 +1,33 @@
 # Control de pesos - Filling Pouch (Android)
 
-App web instalable (PWA) empaquetable como APK con Capacitor. Los datos se guardan en el dispositivo (localStorage).
+App para registrar muestras de peso de fundas y ver el porcentaje fuera de control. Datos guardados en el dispositivo.
 
-## Opcion rapida: instalar sin APK (PWA)
-1. Publica la carpeta `www/` en cualquier hosting HTTPS (GitHub Pages, Netlify...).
-2. Abre la URL en Chrome para Android > menu > "Instalar aplicacion". Funciona sin conexion.
+**Stack:** React 19 + Vite 8 + TypeScript, Tailwind CSS 4, Motion 14 (animaciones), Recharts 3 (graficos), Capacitor 8 (Android).
+
+## Desarrollo
+```
+npm install
+npm run dev        # http://localhost:5173
+npm run build
+```
 
 ## Generar el APK
-Requisitos: Node 18+, JDK 17 y Android Studio (SDK).
+**Opcion A - GitHub Actions (sin instalar nada):** pestana *Actions* > *Build Android APK* > *Run workflow*. Descarga `control-pesos-debug-apk` al terminar.
+
+**Opcion B - local** (Node 22, JDK 21, Android SDK):
 ```
 npm install
 npx cap add android
-npx cap sync android
-cd android && ./gradlew assembleDebug
+npm run android:apk      # android/app/build/outputs/apk/debug/app-debug.apk
 ```
-El APK queda en `android/app/build/outputs/apk/debug/app-debug.apk`. O usa `npx cap open android` y Build > Build APK.
+O `npm run android:open` para abrir Android Studio.
 
-## Dinamicas Android incluidas
-- Vibracion al tocar botones y patron distinto al guardar (corto = en control, largo = sobre el limite, doble = error).
-- Boton "atras" navega entre pestanas y cierra el editor.
-- Copia de respaldo con la hoja de compartir de Android (WhatsApp, Drive, correo).
-- Pantalla encendida mientras se registra.
-- Areas seguras, objetivos tactiles de 48 px, teclado numerico y barra de pestanas fija.
-- Instalable y sin conexion (service worker).
+## Dinamicas Android
+- Haptics nativo (Capacitor): toque, exito/advertencia/error al guardar segun el % obtenido.
+- Boton "atras": vuelve a Registrar; en Registrar sale de la app.
+- Hoja de compartir de Android para exportar CSV y copia de respaldo.
+- Barra de estado integrada, areas seguras, objetivos tactiles de 48 px.
+- Gestos: deslizar una muestra reciente para borrarla; arrastrar hacia abajo para cerrar paneles.
+- Respeta modo oscuro y "reducir animaciones" del sistema.
+
+`legacy-pwa/` conserva la version anterior en HTML unico.
