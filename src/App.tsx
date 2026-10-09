@@ -4,7 +4,11 @@ import { Toast } from "./components/ui";
 import { VistaRegistro } from "./views/Registro";
 import { VistaPanel } from "./views/Panel";
 import { VistaDatos } from "./views/Datos";
-import { cargarDatos, generarEjemplo, guardarDatos, ordenar, type Registro } from "./lib";
+import type { Session } from "@supabase/supabase-js";
+import { Login } from "./components/Login";
+import { supabase } from "./supabase";
+import { descargar, encolar, guardarUmbral, leerUmbral, pendientes, vaciarCola } from "./sync";
+import { cargarDatos, guardarDatos, ordenar, type Registro } from "./lib";
 import { iniciarNativo, toque } from "./native";
 
 const TABS = [["registro", "Registrar", "M12 5v14M5 12h14"], ["panel", "Panel", "M4 20V10M10 20V4M16 20v-7M22 20H2"], ["datos", "Datos", "M4 6h16M4 12h16M4 18h16"]] as const;
@@ -40,9 +44,60 @@ export default function App() {
     return () => window.removeEventListener("popstate", pop);
   }, []);
 
-  const ejemplo = () => { setRegistros(generarEjemplo()); setVista("panel"); aviso("Datos de ejemplo cargados."); };
-  const guardar = (r: Registro) => setRegistros((rs) => [r, ...rs].sort(ordenar));
-  const borrar = (id: string) => setRegistros((rs) => rs.filter((r) => r.id !== id));
+  const [sesion, setSesion] = useState<Session | null | undefined>(undefined);
+  const [estadoSync, setEstadoSync] = useState<"ok" | "sync" | "offline">("sync");
+  const [nPend, setNPend] = useState(pendientes());
+  const esAdmin = sesion?.user.app_metadata?.role === "admin";
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setSesion(data.session));
+    const { data } = supabase.auth.onAuthStateChange((_e, s) => setSesion(s));
+    return () => data.subscription.unsubscribe();
+  }, []);
+
+  const sincronizar = useCallback(async () => {
+    setEstadoSync("sync");
+    try {
+      await vaciarCola();
+      const srv = await descargar();
+      setRegistros(srv);
+      const u = await leerUmbral(); if (u) setUmbral(u);
+      setEstadoSync("ok");
+    } catch { setEstadoSync("offline"); }
+    setNPend(pendientes());
+  }, []);
+
+  const empujar = useCallback(async () => {
+    try { await vaciarCola(); setEstadoSync("ok"); } catch { setEstadoSync("offline"); }
+    setNPend(pendientes());
+  }, []);
+
+  const autenticado = !!sesion;
+  useEffect(() => {
+    if (!autenticado) return;
+    sincronizar();
+    let t = 0;
+    const lanzar = () => { clearTimeout(t); t = window.setTimeout(sincronizar, 400); };
+    const canal = supabase.channel("registros-vivo").on("postgres_changes", { event: "*", schema: "public", table: "registros" }, lanzar).subscribe();
+    const visible = () => { if (!document.hidden) lanzar(); };
+    window.addEventListener("online", lanzar); document.addEventListener("visibilitychange", visible);
+    const iv = window.setInterval(sincronizar, 60000);
+    return () => { supabase.removeChannel(canal); window.removeEventListener("online", lanzar); document.removeEventListener("visibilitychange", visible); clearInterval(iv); clearTimeout(t); };
+  }, [autenticado, sincronizar]);
+
+  const aplicar = useCallback((fn: (rs: Registro[]) => Registro[]) => {
+    setRegistros((prev) => { const next = fn(prev); if (next !== prev) encolar(prev, next); return next; });
+    setNPend(pendientes());
+    window.setTimeout(empujar, 300);
+  }, [empujar]);
+
+  const guardar = (r: Registro) => aplicar((rs) => [r, ...rs].sort(ordenar));
+  const borrar = (id: string) => aplicar((rs) => rs.filter((r) => r.id !== id));
+  const reemplazar = (nuevos: Registro[]) => aplicar(() => nuevos);
+  const cambiarUmbral = (n: number) => { setUmbral(n); if (esAdmin) guardarUmbral(n).catch(() => {}); };
+
+  if (sesion === undefined) return <div className="grid min-h-dvh place-items-center text-mut">Cargando...</div>;
+  if (!sesion) return <Login />;
 
   return (
     <div className="min-h-dvh pb-[calc(6.5rem+env(safe-area-inset-bottom))]">
@@ -55,15 +110,22 @@ export default function App() {
             <h1 className="text-xl leading-tight font-extrabold">Control de pesos</h1>
             <p className="text-xs text-white/70">Filling Pouch - GEW-OP-1.6.2.5.18</p>
           </div>
+          <div className="ml-auto flex flex-col items-end gap-1.5">
+            <motion.span key={estadoSync + nPend} initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+              className={`rounded-full px-2.5 py-1 text-[0.7rem] font-bold ${estadoSync === "offline" || nPend > 0 ? "bg-warn/90" : "bg-white/20"}`}>
+              {estadoSync === "sync" ? "Sincronizando..." : estadoSync === "offline" ? `Sin conexion${nPend ? ` - ${nPend} pend.` : ""}` : nPend ? `${nPend} pendientes` : "Sincronizado"}
+            </motion.span>
+            <button onClick={() => supabase.auth.signOut()} className="text-[0.7rem] text-white/80 underline">{esAdmin ? "Admin" : sesion.user.email?.split("@")[0]} - Salir</button>
+          </div>
         </div>
       </header>
 
       <main className="relative z-10 mx-auto -mt-4 max-w-5xl px-4">
         <AnimatePresence mode="wait" initial={false}>
           <motion.div key={vista} initial={{ opacity: 0, y: 16, filter: "blur(4px)" }} animate={{ opacity: 1, y: 0, filter: "blur(0px)" }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.22 }}>
-            {vista === "registro" && <VistaRegistro registros={registros} umbral={umbral} onGuardar={guardar} onBorrar={borrar} aviso={aviso} />}
-            {vista === "panel" && <VistaPanel registros={registros} umbral={umbral} onEjemplo={ejemplo} />}
-            {vista === "datos" && <VistaDatos registros={registros} umbral={umbral} setUmbral={setUmbral} setRegistros={setRegistros} onEjemplo={ejemplo} aviso={aviso} />}
+            {vista === "registro" && <VistaRegistro registros={registros} umbral={umbral} onGuardar={guardar} onBorrar={borrar} puedeBorrar={esAdmin} aviso={aviso} />}
+            {vista === "panel" && <VistaPanel registros={registros} umbral={umbral} />}
+            {vista === "datos" && <VistaDatos registros={registros} umbral={umbral} setUmbral={cambiarUmbral} setRegistros={reemplazar} esAdmin={esAdmin} aviso={aviso} />}
           </motion.div>
         </AnimatePresence>
       </main>

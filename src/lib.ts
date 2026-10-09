@@ -5,7 +5,6 @@ export const TIPOS = ["Manual", "Semiautomatica"] as const;
 const BALANZAS: Record<string, number> = { A: 12, B: 12, C: 10, D: 6, E: 10 };
 const SEMI_ESTACIONES = 14;
 export const KEY = "pesos-filling-pouch-v2";
-export const CLAVE_ADMIN = "Xbarzallo2026";
 
 export interface Registro {
   id: string; fecha: string; horaRegistro: string; turno: string; supervisor: string;
@@ -144,37 +143,3 @@ export function desdeCSV(texto: string, existentes: Registro[]): Registro[] {
 }
 
 export const ordenar = (a: Registro, b: Registro) => (b.fecha + b.id).localeCompare(a.fecha + a.id);
-
-/* ---------- datos de ejemplo ---------- */
-export function generarEjemplo(): Registro[] {
-  const ctrl: Record<string, string[]> = {
-    Primero: ["Marly Marcillo", "Yuli Carchi", "Maria Solorzano", "Monica Pincay", "Mayra del Rosario"],
-    Segundo: ["Diana Ruiz", "Monica Indio", "Erika Cepeda", "Juana Baque", "Bella Cruz"],
-  };
-  const nombres = ["Rosalia Zuniga", "Kelly Gaspar", "Limbers Loja", "Estefania Castillo", "Clara Quinto", "Kati Varga", "Javier Ronquillo",
-    "Narcisa Zambrano", "Irene Cortez", "Luci Rodriguez", "Carla Sosa", "Karina Puya", "Julia Vaca", "Gisela Vera", "Carol Sanchez", "Lorena Batalla"];
-  const pick = <T,>(a: readonly T[]) => a[Math.floor(Math.random() * a.length)];
-  const r: Registro[] = [], hoy = new Date();
-  for (let d = 9; d >= 0; d--) {
-    const f = new Date(hoy); f.setDate(hoy.getDate() - d);
-    if (f.getDay() === 0) continue;
-    const fecha = `${f.getFullYear()}-${p2(f.getMonth() + 1)}-${p2(f.getDate())}`;
-    TURNOS.forEach((turno) => {
-      const base = (turno === "Primero" ? 14 : 21) - (9 - d) * 0.55;
-      for (let m = 0; m < 9; m++) {
-        const linea = pick(LINEAS);
-        const tipo = linea === "E" && Math.random() < 0.5 ? "Semiautomatica" : "Manual";
-        const total = 20 + Math.floor(Math.random() * 16);
-        const objetivo = Math.max(0, base + (Math.random() * 16 - 7) + (linea === "B" ? 5 : 0));
-        const fuera = Math.min(total, Math.round((total * objetivo) / 100));
-        const critico = Math.round(fuera * Math.random() * 0.15);
-        const altas = Math.round((fuera - critico) * (0.45 + Math.random() * 0.25));
-        const hr = new Date(f); hr.setHours((turno === "Primero" ? 6 : 14) + Math.floor(Math.random() * 8), Math.floor(Math.random() * 60), 0);
-        r.push({ id: uid(), fecha, horaRegistro: hr.toISOString(), turno, supervisor: turno === "Primero" ? SUPERVISORES[0] : SUPERVISORES[1],
-          linea, tipo, balanza: pick(balanzasDe(linea, tipo)), controladora: pick(ctrl[turno]), pesador: pick(nombres), producto: "Agua",
-          total, altas, bajas: fuera - altas - critico, critico, fuera, pct: pctDe(fuera, total) ?? 0 });
-      }
-    });
-  }
-  return r.reverse();
-}

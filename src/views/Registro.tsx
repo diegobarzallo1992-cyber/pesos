@@ -4,9 +4,9 @@ import { Anillo, Boton, Campo, Et, Numero, Seg, Tarjeta } from "../components/ui
 import { SUPERVISORES, TIPOS, TURNOS, LINEAS, balanzasDe, estado, estacion, fmtFecha, hoyLocal, pctDe, tieneSemi, uid, type Registro } from "../lib";
 import { resultado } from "../native";
 
-interface Props { registros: Registro[]; umbral: number; onGuardar: (r: Registro) => void; onBorrar: (id: string) => void; aviso: (m: string) => void }
+interface Props { registros: Registro[]; umbral: number; onGuardar: (r: Registro) => void; onBorrar: (id: string) => void; puedeBorrar: boolean; aviso: (m: string) => void }
 
-export function VistaRegistro({ registros, umbral, onGuardar, onBorrar, aviso }: Props) {
+export function VistaRegistro({ registros, umbral, onGuardar, onBorrar, puedeBorrar, aviso }: Props) {
   const [f, setF] = useState({ fecha: hoyLocal(), turno: "Primero", supervisor: SUPERVISORES[0] as string, linea: "C", tipo: "Manual", balanza: "1" });
   const [txt, setTxt] = useState({ controladora: "", pesador: "", producto: "" });
   const [n, setN] = useState({ total: "", altas: "", bajas: "", critico: "" });
@@ -101,7 +101,7 @@ export function VistaRegistro({ registros, umbral, onGuardar, onBorrar, aviso }:
           <p className="mt-1 text-center text-sm text-mut"><Numero valor={fuera} /> separadas - limite {umbral}%</p>
         </Tarjeta>
         <div>
-          <h2 className="mb-2 px-1 text-sm font-semibold text-mut">Ultimas muestras <span className="font-normal">(desliza para borrar)</span></h2>
+          <h2 className="mb-2 px-1 text-sm font-semibold text-mut">Ultimas muestras{puedeBorrar && <span className="font-normal"> (desliza para borrar)</span>}</h2>
           {registros.length === 0 && <p className="rounded-3xl border border-dashed border-line p-6 text-center text-sm text-mut">Aun no hay muestras. La primera que guardes aparece aqui.</p>}
           <ul className="space-y-2">
             <AnimatePresence initial={false}>
@@ -109,7 +109,7 @@ export function VistaRegistro({ registros, umbral, onGuardar, onBorrar, aviso }:
                 const es = estado(r.pct, umbral);
                 return (
                   <motion.li key={r.id} layout initial={{ opacity: 0, scale: 0.9, y: -12 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, x: -120 }}
-                    drag="x" dragConstraints={{ left: 0, right: 0 }} dragElastic={{ left: 0.6, right: 0 }}
+                    drag={puedeBorrar ? "x" : false} dragConstraints={{ left: 0, right: 0 }} dragElastic={{ left: 0.6, right: 0 }}
                     onDragEnd={(_, i) => { if (i.offset.x < -90) { onBorrar(r.id); resultado("warn"); } }}
                     className="flex items-center gap-3 rounded-2xl bg-card px-3 py-2.5 ring-1 ring-line" style={{ borderLeft: `5px solid ${es.color}` }}>
                     <span className="w-14 font-bold tabular" style={{ color: es.color }}>{r.pct.toFixed(1)}%</span>

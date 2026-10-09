@@ -1,29 +1,20 @@
 import { useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Boton, Campo, Et, Modal, Tarjeta } from "../components/ui";
-import { CLAVE_ADMIN, LINEAS, SUPERVISORES, TIPOS, TURNOS, aCSV, desdeCSV, estado, estacion, fmtFecha, fmtHora, hoyLocal, ordenar, pctDe, type Registro } from "../lib";
-import { entregarArchivo, resultado } from "../native";
+import { LINEAS, SUPERVISORES, TIPOS, TURNOS, aCSV, desdeCSV, estado, estacion, fmtFecha, fmtHora, hoyLocal, ordenar, pctDe, type Registro } from "../lib";
+import { entregarArchivo } from "../native";
 
 interface Props {
   registros: Registro[]; umbral: number; setUmbral: (n: number) => void; setRegistros: (r: Registro[]) => void;
-  onEjemplo: () => void; aviso: (m: string) => void;
+  esAdmin: boolean; aviso: (m: string) => void;
 }
-type Pendiente = { msg: string; ok: () => void } | null;
 
-export function VistaDatos({ registros, umbral, setUmbral, setRegistros, onEjemplo, aviso }: Props) {
-  const [pend, setPend] = useState<Pendiente>(null);
-  const [clave, setClave] = useState(""); const [errClave, setErrClave] = useState(false);
+export function VistaDatos({ registros, umbral, setUmbral, setRegistros, esAdmin, aviso }: Props) {
   const [edit, setEdit] = useState<Registro | null>(null);
   const [errEdit, setErrEdit] = useState("");
   const [confirmarBorrado, setConfirmarBorrado] = useState(false);
   const fCsv = useRef<HTMLInputElement>(null); const fJson = useRef<HTMLInputElement>(null);
   const vacio = registros.length === 0;
-
-  const pedirClave = (msg: string, ok: () => void) => { setClave(""); setErrClave(false); setPend({ msg, ok }); };
-  const verificar = () => {
-    if (clave !== CLAVE_ADMIN) { setErrClave(true); resultado("bad"); return; }
-    const ok = pend!.ok; setPend(null); ok();
-  };
 
   const importarCSV = async (file?: File) => {
     if (!file) return;
@@ -40,7 +31,7 @@ export function VistaDatos({ registros, umbral, setUmbral, setRegistros, onEjemp
       const base = reemplazar ? [] : registros;
       const ids = new Set(base.map((r) => r.id));
       setRegistros([...base, ...(d.registros as Registro[]).filter((r) => !ids.has(r.id))].sort(ordenar));
-      if (typeof d.umbral === "number") setUmbral(d.umbral);
+      if (esAdmin && typeof d.umbral === "number") setUmbral(d.umbral);
       aviso("Copia de respaldo restaurada.");
     } catch { aviso("El archivo de respaldo no es valido."); }
   };
@@ -72,20 +63,19 @@ export function VistaDatos({ registros, umbral, setUmbral, setRegistros, onEjemp
         <div>
           <Et>Limite operativo</Et>
           <div className="flex items-center gap-2">
-            <Boton aria-label="Menos" onClick={() => setUmbral(Math.max(1, umbral - 1))}>-</Boton>
+            <Boton aria-label="Menos" disabled={!esAdmin} onClick={() => setUmbral(Math.max(1, umbral - 1))}>-</Boton>
             <motion.span key={umbral} initial={{ scale: 1.3 }} animate={{ scale: 1 }} className="w-16 text-center text-3xl font-bold tabular">{umbral}%</motion.span>
-            <Boton aria-label="Mas" onClick={() => setUmbral(Math.min(100, umbral + 1))}>+</Boton>
+            <Boton aria-label="Mas" disabled={!esAdmin} onClick={() => setUmbral(Math.min(100, umbral + 1))}>+</Boton>
           </div>
-          <p className="mt-1 text-xs text-mut">maximo de fundas separadas por muestra</p>
+          <p className="mt-1 text-xs text-mut">maximo de fundas separadas por muestra{!esAdmin && " (solo administrador)"}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Boton variante="pri" disabled={vacio} onClick={() => entregarArchivo(`control-pesos-${hoyLocal()}.csv`, aCSV(registros), "text/csv;charset=utf-8")}>Exportar a Excel (CSV)</Boton>
           <Boton onClick={() => fCsv.current?.click()}>Importar CSV</Boton>
           <Boton disabled={vacio} onClick={respaldo}>Copia de respaldo</Boton>
-          <Boton onClick={() => fJson.current?.click()}>Restaurar copia</Boton>
+          {esAdmin && <Boton onClick={() => fJson.current?.click()}>Restaurar copia</Boton>}
           <Boton disabled={vacio} onClick={() => window.print()}>Imprimir</Boton>
-          {vacio && <Boton onClick={onEjemplo}>Datos de ejemplo</Boton>}
-          <Boton variante="peligro" disabled={vacio} onClick={() => pedirClave("Esta accion eliminara TODOS los registros guardados de este dispositivo. No se puede deshacer.", () => setConfirmarBorrado(true))}>Reiniciar proceso</Boton>
+          {esAdmin && <Boton variante="peligro" disabled={vacio} onClick={() => setConfirmarBorrado(true)}>Reiniciar proceso</Boton>}
         </div>
         <input ref={fCsv} type="file" accept=".csv,text/csv" hidden onChange={(e) => { importarCSV(e.target.files?.[0]); e.target.value = ""; }} />
         <input ref={fJson} type="file" accept=".json,application/json" hidden onChange={(e) => { restaurar(e.target.files?.[0]); e.target.value = ""; }} />
@@ -106,8 +96,8 @@ export function VistaDatos({ registros, umbral, setUmbral, setRegistros, onEjemp
                     <td className="px-3 text-right">{r.total}</td><td className="px-3 text-right">{r.altas}</td><td className="px-3 text-right">{r.bajas}</td><td className="px-3 text-right">{r.critico || 0}</td>
                     <td className="px-3 text-right font-bold" style={{ color: estado(r.pct, umbral).color }}>{r.pct.toFixed(1)}%</td>
                     <td className="px-3 whitespace-nowrap">
-                      <button className="min-h-11 px-2 text-xs font-semibold text-deep" onClick={() => pedirClave("Vas a editar un registro ya guardado.", () => setEdit({ ...r }))}>Editar</button>
-                      <button aria-label="Eliminar" className="min-h-11 min-w-11 text-xl text-mut" onClick={() => setRegistros(registros.filter((x) => x.id !== r.id))}>&times;</button>
+                      {esAdmin && <><button className="min-h-11 px-2 text-xs font-semibold text-deep" onClick={() => setEdit({ ...r })}>Editar</button>
+                      <button aria-label="Eliminar" className="min-h-11 min-w-11 text-xl text-mut" onClick={() => setRegistros(registros.filter((x) => x.id !== r.id))}>&times;</button></>}
                     </td>
                   </motion.tr>
                 ))}
@@ -116,15 +106,6 @@ export function VistaDatos({ registros, umbral, setUmbral, setRegistros, onEjemp
           </table>
         </div>
       )}
-
-      <Modal abierto={!!pend} onClose={() => setPend(null)} titulo="Autorizacion requerida">
-        <p className="mb-4 text-sm text-mut">{pend?.msg}</p>
-        <motion.div animate={errClave ? { x: [0, -10, 10, -6, 6, 0] } : {}}>
-          <Campo etiqueta="Clave de autorizacion" type="password" autoFocus value={clave} onChange={(e) => { setClave(e.target.value); setErrClave(false); }} onKeyDown={(e) => e.key === "Enter" && verificar()} />
-        </motion.div>
-        {errClave && <p className="mt-2 text-sm font-medium text-bad">Clave incorrecta.</p>}
-        <div className="mt-5 flex justify-end gap-2"><Boton onClick={() => setPend(null)}>Cancelar</Boton><Boton variante="pri" onClick={verificar}>Continuar</Boton></div>
-      </Modal>
 
       <Modal abierto={confirmarBorrado} onClose={() => setConfirmarBorrado(false)} titulo="Ultima confirmacion">
         <p className="mb-5 text-sm">¿Deseas reiniciar el proceso y borrar todos los registros?</p>

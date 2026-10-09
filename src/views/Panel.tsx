@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { motion } from "motion/react";
 import { Area, AreaChart, CartesianGrid, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { Boton, Numero, Tarjeta } from "../components/ui";
+import { Numero, Tarjeta } from "../components/ui";
 import { LINEAS, TURNOS, agrupar, estacion, estado, fmtFecha, fueraDeParametro, pctDe, type Registro } from "../lib";
 
 type Filtros = { linea: string; turno: string; desde: string; hasta: string };
@@ -40,7 +40,7 @@ function Kpi({ t, children, nota, color }: { t: string; children: React.ReactNod
   );
 }
 
-export function VistaPanel({ registros, umbral, onEjemplo }: { registros: Registro[]; umbral: number; onEjemplo: () => void }) {
+export function VistaPanel({ registros, umbral }: { registros: Registro[]; umbral: number }) {
   const [f, setF] = useState<Filtros>(F0);
   const d = useMemo(() => registros.filter((r) =>
     (f.linea === "Todas" || r.linea === f.linea) && (f.turno === "Todos" || r.turno === f.turno) &&
@@ -49,8 +49,7 @@ export function VistaPanel({ registros, umbral, onEjemplo }: { registros: Regist
   if (!registros.length) {
     return (
       <Tarjeta className="py-14 text-center">
-        <p className="mb-4 text-mut">El panel se arma con las muestras que registres.</p>
-        <Boton variante="pri" onClick={onEjemplo}>Ver con datos de ejemplo</Boton>
+        <p className="text-mut">El panel se arma con las muestras que registres. Empieza en Registrar.</p>
       </Tarjeta>
     );
   }
