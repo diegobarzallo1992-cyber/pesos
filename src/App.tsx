@@ -3,15 +3,14 @@ import { AnimatePresence, motion } from "motion/react";
 import { Toast } from "./components/ui";
 import { VistaRegistro } from "./views/Registro";
 import { VistaPanel } from "./views/Panel";
-import { VistaDatos } from "./views/Datos";
 import type { Session } from "@supabase/supabase-js";
 import { Login } from "./components/Login";
 import { supabase } from "./supabase";
-import { descargar, encolar, guardarUmbral, leerUmbral, pendientes, vaciarCola } from "./sync";
+import { descargar, encolar, leerUmbral, pendientes, vaciarCola } from "./sync";
 import { cargarDatos, guardarDatos, ordenar, type Registro } from "./lib";
 import { iniciarNativo, toque } from "./native";
 
-const TABS = [["registro", "Registrar", "M12 5v14M5 12h14"], ["panel", "Panel", "M4 20V10M10 20V4M16 20v-7M22 20H2"], ["datos", "Datos", "M4 6h16M4 12h16M4 18h16"]] as const;
+const TABS = [["registro", "Registrar", "M12 5v14M5 12h14"], ["panel", "Panel", "M4 20V10M10 20V4M16 20v-7M22 20H2"]] as const;
 type Vista = (typeof TABS)[number][0];
 
 export default function App() {
@@ -93,8 +92,6 @@ export default function App() {
 
   const guardar = (r: Registro) => aplicar((rs) => [r, ...rs].sort(ordenar));
   const borrar = (id: string) => aplicar((rs) => rs.filter((r) => r.id !== id));
-  const reemplazar = (nuevos: Registro[]) => aplicar(() => nuevos);
-  const cambiarUmbral = (n: number) => { setUmbral(n); if (esAdmin) guardarUmbral(n).catch(() => {}); };
 
   if (sesion === undefined) return <div className="grid min-h-dvh place-items-center text-mut">Cargando...</div>;
   if (!sesion) return <Login />;
@@ -125,7 +122,6 @@ export default function App() {
           <motion.div key={vista} initial={{ opacity: 0, y: 16, filter: "blur(4px)" }} animate={{ opacity: 1, y: 0, filter: "blur(0px)" }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.22 }}>
             {vista === "registro" && <VistaRegistro registros={registros} umbral={umbral} onGuardar={guardar} onBorrar={borrar} puedeBorrar={esAdmin} aviso={aviso} />}
             {vista === "panel" && <VistaPanel registros={registros} umbral={umbral} />}
-            {vista === "datos" && <VistaDatos registros={registros} umbral={umbral} setUmbral={cambiarUmbral} setRegistros={reemplazar} esAdmin={esAdmin} aviso={aviso} />}
           </motion.div>
         </AnimatePresence>
       </main>
