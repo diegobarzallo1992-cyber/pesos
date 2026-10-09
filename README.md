@@ -50,3 +50,8 @@ Configuracion (una vez):
 1. Supabase > **Edge Functions** > **Deploy a new function** > **Via Editor**. Nombre: `admin-usuarios`. Pega `supabase/functions/admin-usuarios/index.ts`. En los ajustes de la funcion **desactiva "Verify JWT"** y pulsa **Deploy**.
 2. Para recibir el correo: crea una cuenta gratis en resend.com **con el correo diegobarzallo1992@gmail.com**, crea una API Key y guardala en Supabase > Edge Functions > **Secrets** como `RESEND_API_KEY`. (Con el remitente de prueba de Resend, solo se puede enviar al correo de la propia cuenta, que es justo este caso.) Opcional: secreto `ADMIN_EMAIL` para cambiar el destinatario.
 3. Sin `RESEND_API_KEY` todo funciona igual, pero la aprobacion se hace solo desde la pestana Usuarios.
+
+## Excel por URL (solo lectura)
+1. Ejecuta `supabase/excel.sql` en el SQL Editor; el resultado es tu **clave de Excel**.
+2. En Supabase > Project Settings > Data API sube **Max rows** (por defecto 1000) para traer todos los registros.
+3. En Excel pega `excel/registros.pq` (Editor avanzado), con tu clave, y elige credenciales **Anonimo**. Se actualiza con Datos > Actualizar todo.
